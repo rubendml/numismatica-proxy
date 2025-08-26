@@ -3,17 +3,21 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const path = searchParams.get('path') || 'data/catálogo.json';
+  const path = searchParams.get('path') || 'data/catalogo.json';
 
   try {
-    // Configuración
+    // === CONFIGURACIÓN ===
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const OWNER = 'rubendml';
     const REPO = 'numismatica';
     const BRANCH = 'main';
 
     if (!GITHUB_TOKEN) {
-      return NextResponse.json({ error: 'Token de GitHub no configurado' }, { status: 500 });
+      console.error('❌ GITHUB_TOKEN no está definido');
+      return NextResponse.json(
+        { error: 'Token de GitHub no configurado en el servidor' },
+        { status: 500 }
+      );
     }
 
     const fileUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`;
@@ -25,8 +29,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json({ error: error.message }, { status: response.status });
+      const error = await response.json().catch(() => ({}));
+      console.error('❌ Error al obtener archivo:', error);
+      return NextResponse.json(
+        { error: error.message || 'No se pudo acceder al archivo' },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
@@ -35,8 +43,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(jsonData);
   } catch (error) {
-    console.error('Error en el proxy:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    console.error('❌ Error en el proxy:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
   }
 }
 
@@ -44,7 +55,10 @@ export async function POST(request: NextRequest) {
   const { path, content } = await request.json();
 
   if (!content) {
-    return NextResponse.json({ error: 'No se proporcionó contenido' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'No se proporcionó contenido' },
+      { status: 400 }
+    );
   }
 
   const targetPath = path || 'data/coleccion.json';
@@ -64,7 +78,11 @@ export async function POST(request: NextRequest) {
     sha = fileData.sha;
   } else if (fileRes.status !== 404) {
     const error = await fileRes.json();
-    return NextResponse.json({ error: error.message }, { status: fileRes.status });
+    console.error('❌ Error al obtener el archivo:', error);
+    return NextResponse.json(
+      { error: error.message },
+      { status: fileRes.status }
+    );
   }
 
   const commitRes = await fetch(fileUrl, {
@@ -90,6 +108,7 @@ export async function POST(request: NextRequest) {
       commit: result.commit
     });
   } else {
+    console.error('❌ Error en la API de GitHub:', result);
     return NextResponse.json({
       success: false,
       error: result.message
