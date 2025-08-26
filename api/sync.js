@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const OWNER = 'rubendml';
     const REPO = 'numismatica';
-    const PATH = req.query.path || 'data/coleccion.json'; // Ruta del archivo
+    const PATH = req.query.path || 'data/coleccion.json';
     const BRANCH = 'main';
 
     if (!GITHUB_TOKEN) {
@@ -15,8 +15,8 @@ export default async function handler(req, res) {
     }
 
     try {
+        // === LECTURA (GET) ===
         if (method === 'GET') {
-            // === LECTURA: Obtener archivo desde GitHub ===
             const fileUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
             const response = await fetch(fileUrl, {
                 headers: {
@@ -38,8 +38,8 @@ export default async function handler(req, res) {
             return res.status(200).json(jsonData);
         }
 
+        // === ESCRITURA (POST) ===
         if (method === 'POST') {
-            // === ESCRITURA: Actualizar archivo en GitHub ===
             const { content } = req.body;
 
             if (!content) {
@@ -99,6 +99,7 @@ export default async function handler(req, res) {
             }
         }
 
+        // Otro método
         return res.status(405).json({ error: 'Método no permitido' });
     } catch (error) {
         console.error('❌ Error en el proxy:', error);
