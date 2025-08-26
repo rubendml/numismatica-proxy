@@ -6,17 +6,15 @@ export default async function handler(req, res) {
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
   const OWNER = 'rubendml';
   const REPO = 'numismatica';
-  const PATH = req.query.path || 'data/catalogo.json'; // Ruta del archivo
+  const PATH = req.query.path || 'data/catálogo.json'; // ← ¡Importante!
   const BRANCH = 'main';
 
-  // Validación del token
   if (!GITHUB_TOKEN) {
-    console.error('❌ GITHUB_TOKEN no está definido en las variables de entorno');
-    return res.status(500).json({ error: 'Token de GitHub no configurado en el servidor' });
+    console.error('❌ GITHUB_TOKEN no está definido');
+    return res.status(500).json({ error: 'Token de GitHub no configurado' });
   }
 
   try {
-    // === LECTURA: GET /api/sync?path=data/catalogo.json ===
     if (method === 'GET') {
       const fileUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
       const response = await fetch(fileUrl, {
@@ -27,9 +25,9 @@ export default async function handler(req, res) {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
+        const error = await response.json();
         console.error('❌ Error al obtener archivo:', error);
-        return res.status(response.status).json({ error: error.message || 'No se pudo acceder al archivo' });
+        return res.status(response.status).json({ error: error.message });
       }
 
       const data = await response.json();
@@ -39,7 +37,6 @@ export default async function handler(req, res) {
       return res.status(200).json(jsonData);
     }
 
-    // === ESCRITURA: POST /api/sync → Guardar colección ===
     if (method === 'POST') {
       const { path, content } = req.body;
 
@@ -50,7 +47,6 @@ export default async function handler(req, res) {
       const targetPath = path || 'data/coleccion.json';
       const encodedContent = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
 
-      // Obtener SHA del archivo actual (necesario para actualizar)
       const fileUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${targetPath}`;
       const fileRes = await fetch(fileUrl, {
         headers: {
@@ -69,7 +65,6 @@ export default async function handler(req, res) {
         return res.status(fileRes.status).json({ error: error.message });
       }
 
-      // Hacer el commit
       const commitRes = await fetch(fileUrl, {
         method: 'PUT',
         headers: {
@@ -101,7 +96,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Método no permitido
     return res.status(405).json({ error: 'Método no permitido' });
   } catch (error) {
     console.error('❌ Error en el proxy:', error);
