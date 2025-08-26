@@ -1,5 +1,5 @@
 // numismatica-proxy/api/sync.js
-export default async function handler(req, res) {
+module.exports = async function (req, res) {
   const { method } = req;
 
   // === CONFIGURACIÓN ===
@@ -14,9 +14,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // === LECTURA: GET /api/sync?path=data/catálogo.json ===
+    // === LECTURA: GET /api/sync?path=data/catalogo.json ===
     if (method === 'GET') {
-      const PATH = req.query.path || 'data/catálogo.json';
+      const PATH = req.query.path || 'data/catalogo.json';
       const fileUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
 
       const response = await fetch(fileUrl, {
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({}));
         console.error('❌ Error al obtener archivo:', error);
         return res.status(response.status).json({ error: error.message });
       }
@@ -107,4 +107,4 @@ export default async function handler(req, res) {
       error: 'Error interno del servidor'
     });
   }
-}
+};
